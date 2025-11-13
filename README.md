@@ -1,16 +1,19 @@
-# app_enfermeria
+# TeenExByNurses 🩺💬
 
-A new Flutter project.
+Aplicación móvil y web desarrollada en **Flutter** para promover la educación en salud y bienestar entre adolescentes.  
+El proyecto fue creado por el equipo de **enfermería**, integrando un diseño intuitivo y contenido informativo confiable.
 
-## Getting Started
+## 🚀 Características principales
+- Interfaz adaptable (responsive) para dispositivos móviles y web.  
+- Navegación fluida e intuitiva con Flutter.  
+- Contenido educativo y secciones interactivas.  
+- Integración con servicios de comunicación y versiones actualizadas del SDK.  
 
-This project is a starting point for a Flutter application.
+## 🛠️ Tecnologías utilizadas
+- **Flutter & Dart**
+- **Material Design**
+- **Firebase (opcional, para base de datos o autenticación)**
 
-A few resources to get you started if this is your first Flutter project:
+## 📱 Ejecución local
+Para ejecutar el proyecto, asegúrate de tener Flutter instalado y usa los siguientes comandos:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
