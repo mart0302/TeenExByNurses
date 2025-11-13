@@ -9,31 +9,37 @@ class DiferenciasScreen extends StatefulWidget {
 }
 
 class _DiferenciasScreenState extends State<DiferenciasScreen> {
+  // Lista de videos actualizada con Cloudinary
   final List<VideoContent> _videoContents = [
     VideoContent(
       title: 'Calentamiento',
-      videoPath: 'assets/videos/calentamiento.mp4',
+      videoPath: 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071061/calentamiento_mgu02y.mp4',
       description: 'Ejercicios de calentamiento para preparar el cuerpo',
     ),
     VideoContent(
       title: 'Actividad Física de bajo impacto',
-      videoPath: 'assets/videos/bajo_impacto.mp4',
+      videoPath: 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071489/bajo_impacto_l70dl6.mp4',
       description: 'Actividades suaves para todas las edades',
     ),
     VideoContent(
       title: 'Ejercicios de cardio en casa',
-      videoPath: 'assets/videos/cardio_en_casa.mp4',
+      videoPath: 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071861/cardio_en_casa_pqhdrf.mp4',
       description: 'Rutinas cardiovasculares sin necesidad de equipo',
     ),
     VideoContent(
       title: 'Rutina de ejercicios',
-      videoPath: 'assets/videos/rutina_ejercicios.mp4',
+      videoPath: 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071051/rutina_ejercicios_mce92o.mp4',
       description: 'Secuencia completa de ejercicios',
     ),
     VideoContent(
       title: 'Enfriamiento',
-      videoPath: 'assets/videos/enfriamiento.mp4',
+      videoPath: 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071060/enfriamiento_oxd9d7.mp4',
       description: 'Ejercicios para finalizar la actividad física',
+    ),
+    VideoContent(
+      title: 'Sedentarismo',
+      videoPath: 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071048/sedentarismo_hcjzns.mp4',
+      description: 'Información sobre el sedentarismo',
     ),
   ];
 
@@ -58,43 +64,200 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
     ),
   ];
 
+  // Controladores para los diálogos de video
   late List<VideoPlayerController?> _controllers;
   late List<bool> _isVideoInitialized;
+  late List<bool> _isLoadingVideo;
 
   @override
   void initState() {
     super.initState();
     _controllers = List<VideoPlayerController?>.filled(_videoContents.length, null);
     _isVideoInitialized = List<bool>.filled(_videoContents.length, false);
+    _isLoadingVideo = List<bool>.filled(_videoContents.length, false);
   }
 
   Future<void> _initializeVideo(int index) async {
-    if (_controllers[index] != null && _isVideoInitialized[index]) return;
-
     try {
-      _controllers[index] = VideoPlayerController.asset(_videoContents[index].videoPath);
+      if (mounted) {
+        setState(() {
+          _isLoadingVideo[index] = true;
+        });
+      }
+
+      _controllers[index] = VideoPlayerController.networkUrl(
+        Uri.parse(_videoContents[index].videoPath),
+      )..addListener(() {
+        if (mounted) setState(() {});
+      });
+
       await _controllers[index]!.initialize();
 
       if (mounted) {
         setState(() {
           _isVideoInitialized[index] = true;
+          _isLoadingVideo[index] = false;
         });
       }
     } catch (e) {
       debugPrint("❌ Error cargando video $index: $e");
       if (mounted) {
         setState(() {
-          _isVideoInitialized[index] = true;
+          _isLoadingVideo[index] = false;
+          _isVideoInitialized[index] = false;
         });
       }
+      _mostrarErrorDialog('Error al cargar el video', 'No se pudo cargar el video. Verifica tu conexión a internet.');
     }
   }
 
-  void _pauseOtherVideos(int currentIndex) {
-    for (int i = 0; i < _controllers.length; i++) {
-      if (i != currentIndex && _controllers[i] != null && _controllers[i]!.value.isPlaying) {
-        _controllers[i]!.pause();
-      }
+  void _mostrarVideoDialog(int index) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              // Header del diálogo
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF004C91),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.play_circle_filled_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Video: ${_videoContents[index].title}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        if (_controllers[index] != null && _controllers[index]!.value.isPlaying) {
+                          _controllers[index]!.pause();
+                        }
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Video Player
+              Expanded(
+                child: _isVideoInitialized[index] && _controllers[index] != null
+                    ? ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      VideoPlayer(_controllers[index]!),
+                      if (!_controllers[index]!.value.isPlaying)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 50,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _controllers[index]!.play();
+                              });
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+                    : const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF004C91),
+                  ),
+                ),
+              ),
+              // Controles del video
+              if (_isVideoInitialized[index] && _controllers[index] != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  color: Colors.white,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _controllers[index]!.value.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: const Color(0xFF004C91),
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _controllers[index]!.value.isPlaying
+                                ? _controllers[index]!.pause()
+                                : _controllers[index]!.play();
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: VideoProgressIndicator(
+                          _controllers[index]!,
+                          allowScrubbing: true,
+                          colors: const VideoProgressColors(
+                            playedColor: Color(0xFF004C91),
+                            bufferedColor: Color(0xFFCCE4FF),
+                            backgroundColor: Color(0xFFE6F0FA),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _iniciarVideo(int index) async {
+    await _initializeVideo(index);
+    if (_isVideoInitialized[index]) {
+      _mostrarVideoDialog(index);
     }
   }
 
@@ -142,6 +305,44 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
     );
   }
 
+  void _mostrarErrorDialog(String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFFF7FAFC),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Center(
+          child: Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              fontSize: 18,
+            ),
+          ),
+        ),
+        content: Text(
+          mensaje,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 16, color: Colors.black87),
+        ),
+        actions: [
+          Center(
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Aceptar'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBotonInfo(String titulo, String contenido) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -164,285 +365,163 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
     );
   }
 
-  Widget _buildVideoPlayer(VideoContent content, int index) {
-    final controller = _controllers[index];
-    final isInitialized = _isVideoInitialized[index];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16), // Reducido el margen
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8, // Reducido el blur
-            offset: const Offset(0, 2), // Reducido el offset
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // IMPORTANTE: Evita overflow
-        children: [
-          // Header con título y descripción
-          Container(
-            padding: const EdgeInsets.all(16), // Reducido el padding
-            decoration: const BoxDecoration(
-              color: Color(0xFF004C91),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
+  Widget _buildVideoCard(VideoContent content, int index) {
+    return GestureDetector(
+      onTap: () => _iniciarVideo(index),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.sports_gymnastics_rounded,
-                        size: 18, // Tamaño reducido
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        content.title,
-                        style: const TextStyle(
-                          fontSize: 16, // Tamaño reducido
-                          fontWeight: FontWeight.bold,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header con título y descripción
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFF004C91),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.sports_gymnastics_rounded,
+                          size: 18,
                           color: Colors.white,
                         ),
-                        maxLines: 2, // Limitar líneas
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  content.description,
-                  style: TextStyle(
-                    fontSize: 13, // Tamaño reducido
-                    color: Colors.white.withOpacity(0.9),
-                    height: 1.3,
-                  ),
-                  maxLines: 2, // Limitar líneas
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-
-          // Video o placeholder
-          if (isInitialized && controller != null)
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: controller.value.aspectRatio,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        VideoPlayer(controller),
-                        if (!controller.value.isPlaying)
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.4),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: const Icon(Icons.play_arrow_rounded,
-                                  size: 40, color: Colors.white), // Tamaño reducido
-                              onPressed: () {
-                                setState(() {
-                                  controller.play();
-                                  _pauseOtherVideos(index);
-                                });
-                              },
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.all(12), // Padding reducido
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          controller.value.isPlaying
-                              ? Icons.pause_circle_filled_rounded
-                              : Icons.play_circle_fill_rounded,
-                          size: 28, // Tamaño reducido
-                          color: const Color(0xFF004C91),
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            if (controller.value.isPlaying) {
-                              controller.pause();
-                            } else {
-                              controller.play();
-                              _pauseOtherVideos(index);
-                            }
-                          });
-                        },
-                      ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 10),
                       Expanded(
-                        child: VideoProgressIndicator(
-                          controller,
-                          allowScrubbing: true,
-                          colors: const VideoProgressColors(
-                            playedColor: Color(0xFF004C91),
-                            bufferedColor: Color(0xFFCCE4FF),
-                            backgroundColor: Color(0xFFE6F0FA),
+                        child: Text(
+                          content.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      IconButton(
-                        icon: Icon(
-                          controller.value.isLooping
-                              ? Icons.repeat_on_rounded
-                              : Icons.repeat_rounded,
-                          color: const Color(0xFF004C91),
-                          size: 22, // Tamaño reducido
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            controller.setLooping(!controller.value.isLooping);
-                          });
-                        },
                       ),
                     ],
                   ),
-                ),
-              ],
-            )
-          else
-            _buildVideoPlaceholder(content, index),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVideoPlaceholder(VideoContent content, int index) {
-    return GestureDetector(
-      onTap: () {
-        _initializeVideo(index).then((_) {
-          if (mounted) {
-            setState(() {});
-          }
-        });
-      },
-      child: Container(
-        height: 140, // Altura reducida
-        padding: const EdgeInsets.all(16), // Padding reducido
-        decoration: BoxDecoration(
-          color: const Color(0xFFF7FAFC),
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(16),
-            bottomRight: Radius.circular(16),
-          ),
-          border: Border.all(
-            color: const Color(0xFFE6F0FA),
-            width: 1, // Ancho reducido
-          ),
-        ),
-        child: Row( // Cambiado a Row para mejor uso del espacio
-          children: [
-            // Icono principal
-            Container(
-              width: 60, // Tamaño reducido
-              height: 60, // Tamaño reducido
-              decoration: BoxDecoration(
-                color: const Color(0xFF004C91),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF004C91).withOpacity(0.3),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.play_arrow_rounded,
-                size: 28, // Tamaño reducido
-                color: Colors.white,
-              ),
-            ),
-
-            const SizedBox(width: 16),
-
-            // Contenido textual
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Ver video demostrativo',
-                    style: const TextStyle(
-                      fontSize: 14, // Tamaño reducido
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF004C91),
-                    ),
-                  ),
-
-                  const SizedBox(height: 4),
-
+                  const SizedBox(height: 6),
                   Text(
                     content.description,
                     style: TextStyle(
-                      fontSize: 12, // Tamaño reducido
-                      color: Colors.grey[700],
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.9),
                       height: 1.3,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                ],
+              ),
+            ),
 
-                  const SizedBox(height: 6),
-
-                  // Badge de optimización
+            // Contenido de la tarjeta del video
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF7FAFC),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF004C91).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.bolt_rounded,
-                          size: 12,
-                          color: const Color(0xFF004C91),
+                      color: const Color(0xFF004C91),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF004C91).withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Toca para cargar',
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      size: 28,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Ver video demostrativo',
                           style: TextStyle(
-                            fontSize: 10,
-                            color: const Color(0xFF004C91).withOpacity(0.8),
-                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF004C91),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Toca para ver el video en pantalla completa',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                            height: 1.3,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF004C91).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.play_circle_rounded,
+                                size: 12,
+                                color: const Color(0xFF004C91),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Reproducir video',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: const Color(0xFF004C91).withOpacity(0.8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -466,7 +545,7 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
           'Actividad - Ejercicio - Rutina',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 16, // Tamaño reducido
+            fontSize: 16,
             color: Colors.white,
           ),
         ),
@@ -478,15 +557,15 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
         centerTitle: true,
         elevation: 0,
       ),
-      body: SafeArea( // IMPORTANTE: Evita overlap con notches
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16), // Padding reducido
+          padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min, // IMPORTANTE: Previene overflow
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Botones de información
               Container(
-                padding: const EdgeInsets.all(12), // Padding reducido
+                padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -510,7 +589,7 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
               // Título de sección de videos
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(12), // Padding reducido
+                padding: const EdgeInsets.all(12),
                 margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: const Color(0xFF004C91),
@@ -527,7 +606,7 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
                       child: const Icon(
                         Icons.video_library_rounded,
                         color: Colors.white,
-                        size: 20, // Tamaño reducido
+                        size: 20,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -535,7 +614,7 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
                       child: Text(
                         'Videos Demonstrativos',
                         style: TextStyle(
-                          fontSize: 16, // Tamaño reducido
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -563,7 +642,7 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
               // Lista de videos
               ...List.generate(
                 _videoContents.length,
-                    (index) => _buildVideoPlayer(_videoContents[index], index),
+                    (index) => _buildVideoCard(_videoContents[index], index),
               ),
 
               const SizedBox(height: 16),
@@ -578,14 +657,14 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
                 child: Row(
                   children: [
                     Icon(
-                      Icons.info_outline_rounded,
+                      Icons.play_circle_filled_rounded,
                       color: const Color(0xFF004C91),
                       size: 18,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Los videos se cargan bajo demanda para optimizar el rendimiento',
+                        'Los videos se reproducen en pantalla completa',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey[700],
@@ -597,7 +676,7 @@ Comprender las diferencias entre actividad física y ejercicio es fundamental pa
                 ),
               ),
 
-              const SizedBox(height: 20), // Espacio extra al final
+              const SizedBox(height: 20),
             ],
           ),
         ),

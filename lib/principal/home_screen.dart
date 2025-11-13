@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../videos/video_widget.dart';
+import 'package:video_player/video_player.dart';
 import 'pantalla_planificacion.dart';
 import 'pantalla_material.dart';
 import 'pantalla_recomendaciones.dart';
 import 'pantalla_informacion.dart';
 import '../welcome_screen.dart';
-import 'configuracion.dart'; // 👈 Agregamos esta línea
+import 'configuracion.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -314,7 +314,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.0),
       child: Text(
-        'Recordá mantener tu información actualizada en 🧑‍💼 Mi información',
+        'Recuerda mantener tu información actualizada en Mi información',
         style: TextStyle(fontSize: 12, color: Colors.grey),
       ),
     );
@@ -386,6 +386,280 @@ class _HomeScreenState extends State<HomeScreen> {
           selectedHead: '',
           selectedBody: '',
           selectedOutfit: '',
+        ),
+      ),
+    );
+  }
+}
+
+// VideoWidget incluido directamente en el mismo archivo
+class VideoWidget extends StatefulWidget {
+  const VideoWidget({super.key});
+
+  @override
+  State<VideoWidget> createState() => _VideoWidgetState();
+}
+
+class _VideoWidgetState extends State<VideoWidget> {
+  late VideoPlayerController _controller;
+  bool _isVideoInitialized = false;
+  bool _isLoading = false;
+
+  // URL del video manual de usuario desde Cloudinary
+  final String _videoUrl = 'https://res.cloudinary.com/dzgwm2jpc/video/upload/v1763071021/pruebavideo_reducido_gbn5j3.mp4';
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideoController();
+  }
+
+  Future<void> _initializeVideoController() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+
+      _controller = VideoPlayerController.networkUrl(Uri.parse(_videoUrl))
+        ..addListener(() {
+          if (mounted) setState(() {});
+        });
+
+      await _controller.initialize();
+
+      if (mounted) {
+        setState(() {
+          _isVideoInitialized = true;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("❌ Error cargando video: $e");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isVideoInitialized = false;
+        });
+      }
+    }
+  }
+
+  void _mostrarVideoCompleto() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(20),
+        child: Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            children: [
+              // Header del diálogo
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF004C91),
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.help_outline_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Manual de Usuario',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        if (_controller.value.isPlaying) {
+                          _controller.pause();
+                        }
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              // Video Player
+              Expanded(
+                child: _isVideoInitialized
+                    ? ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      VideoPlayer(_controller),
+                      if (!_controller.value.isPlaying)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.play_arrow_rounded,
+                              size: 50,
+                              color: Colors.white,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _controller.play();
+                              });
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+                    : const Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF004C91),
+                  ),
+                ),
+              ),
+              // Controles del video
+              if (_isVideoInitialized)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  color: Colors.white,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _controller.value.isPlaying
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: const Color(0xFF004C91),
+                          size: 30,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _controller.value.isPlaying
+                                ? _controller.pause()
+                                : _controller.play();
+                          });
+                        },
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: VideoProgressIndicator(
+                          _controller,
+                          allowScrubbing: true,
+                          colors: const VideoProgressColors(
+                            playedColor: Color(0xFF004C91),
+                            bufferedColor: Color(0xFFCCE4FF),
+                            backgroundColor: Color(0xFFE6F0FA),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: _mostrarVideoCompleto,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF004C91), width: 2),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Vista previa del video
+            if (_isVideoInitialized)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: VideoPlayer(_controller),
+              )
+            else if (_isLoading)
+              const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF004C91),
+                ),
+              )
+            else
+              const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.play_circle_filled_rounded,
+                    color: Color(0xFF004C91),
+                    size: 50,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Manual de Usuario',
+                    style: TextStyle(
+                      color: Color(0xFF004C91),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Toca para ver el video',
+                    style: TextStyle(
+                      color: Color(0xFF004C91),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+
+            // Overlay de play
+            if (_isVideoInitialized && !_controller.value.isPlaying)
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.play_arrow_rounded,
+                  color: Colors.white,
+                  size: 40,
+                ),
+              ),
+          ],
         ),
       ),
     );
