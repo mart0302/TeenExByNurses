@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "711780700778",
+    "project_id": "aplicacion-enfermeria",
+    "storage_bucket": "aplicacion-enfermeria.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:711780700778:android:66345e89388e3dbf02f013",
+        "android_client_info": {
+          "package_name": "com.example.app_enfermeria"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaYf4rTPXkQkJ98LuSTwpw6FRUK-pkjUc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
