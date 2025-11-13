@@ -1,4 +1,6 @@
+# -----------------
 # Miscellaneous
+# -----------------
 *.class
 *.log
 *.pyc
@@ -12,18 +14,18 @@
 .swiftpm/
 migrate_working_dir/
 
-# IntelliJ related
+# -----------------
+# IDE / Editor
+# -----------------
 *.iml
 *.ipr
 *.iws
 .idea/
+.vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
+# -----------------
+# Flutter / Dart / Pub
+# -----------------
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
@@ -31,15 +33,68 @@ migrate_working_dir/
 .flutter-plugins-dependencies
 .pub-cache/
 .pub/
-/build/
+build/
 
-# Symbolication related
-app.*.symbols
+# -----------------
+# iOS / macOS
+# -----------------
+**/dgph
+*.mode1v3
+*.mode2v3
+*.moved-aside
+*.pbxuser
+*.perspectivev3
+**/*sync/
+.sconsign.dblite
+.tags*
+**/.vagrant/
+**/DerivedData/
+Icon?
+**/Pods/
+**/.symlinks/
+profile
+xcuserdata
+**/.generated/
+Flutter/App.framework
+Flutter/Flutter.framework
+Flutter/Flutter.podspec
+Flutter/Generated.xcconfig
+Flutter/ephemeral/
+Flutter/app.flx
+Flutter/app.zip
+Flutter/flutter_assets/
+Flutter/flutter_export_environment.sh
+ServiceDefinitions.json
+Runner/GeneratedPluginRegistrant.*
 
-# Obfuscation related
-app.*.map.json
+# Ignorar credenciales de Firebase / Google
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
 
-# Android Studio will place build artifacts here
+# -----------------
+# Android
+# -----------------
 /android/app/debug
 /android/app/profile
 /android/app/release
+android/.gradle/
+android/captures/
+android/local.properties
+android/gradlew
+android/gradlew.bat
+android/key.properties
+**/*.keystore
+**/*.jks
+android/GeneratedPluginRegistrant.java
+flutter/ephemeral
+lib/firebase_options.dart
+
+# -----------------
+# Otros
+# -----------------
+# Videos grandes
+assets/videos/
+
+# Symbolication / Obfuscation
+app.*.symbols
+app.*.map.json
